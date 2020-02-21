@@ -1,5 +1,6 @@
 package core;
 
+import lime.utils.Int16Array;
 import lime.math.Matrix4;
 import lime.graphics.opengl.GLTexture;
 import lime.graphics.opengl.GLUniformLocation;
@@ -14,12 +15,15 @@ import sys.io.File;
 class WebGLRenderer {
 	var gl:WebGLRenderContext;
 
-	private var glBuffer:GLBuffer;
+	private var bufferVertices:GLBuffer;
+	private var bufferIndices:GLBuffer;
+
 	private var glMatrixUniform:GLUniformLocation;
 	private var glProgram:GLProgram;
 	private var glTexture:GLTexture;
-	private var glTextureAttribute:Int;
-	private var glVertexAttribute:Int;
+	
+	private var a_Position:Int;
+	private var a_TexCoord:Int;
 	
 	var image:Image;
 
@@ -41,16 +45,18 @@ class WebGLRenderer {
 					
 		var vertexSource = 
 						
-			"attribute vec4 aPosition;
-			attribute vec2 aTexCoord;
-			varying vec2 vTexCoord;
+			"
+			attribute vec4 a_Position;
+			attribute vec2 a_TexCoord;
+			
+			varying vec2 v_TexCoord;
 						
-			uniform mat4 uMatrix;
+			uniform mat4 u_Matrix;
 						
 			void main(void) {
 							
-				vTexCoord = aTexCoord;
-				gl_Position = uMatrix * aPosition;
+				v_TexCoord = a_TexCoord;
+				gl_Position = u_Matrix * a_Position;
 							
 			}";
 					
@@ -59,24 +65,25 @@ class WebGLRenderer {
 			#if !desktop
 			"precision mediump float;" +
 			#end
-			"varying vec2 vTexCoord;
-			uniform sampler2D uImage0;
+			"
+			varying vec2 v_TexCoord;
+			uniform sampler2D u_Image0;
 						
 			void main(void)
 			{
-				gl_FragColor = texture2D (uImage0, vTexCoord);
+				gl_FragColor = texture2D (u_Image0, v_TexCoord);
 			}";
 
 			glProgram = GLProgram.fromSources (gl, vertexSource, fragmentSource);
 			gl.useProgram (glProgram);
 			
-			glVertexAttribute = gl.getAttribLocation (glProgram, "aPosition");
-			glTextureAttribute = gl.getAttribLocation (glProgram, "aTexCoord");
-			glMatrixUniform = gl.getUniformLocation (glProgram, "uMatrix");
-			var imageUniform = gl.getUniformLocation (glProgram, "uImage0");
+			a_Position = gl.getAttribLocation (glProgram, "a_Position");
+			a_TexCoord = gl.getAttribLocation (glProgram, "a_TexCoord");
+			glMatrixUniform = gl.getUniformLocation (glProgram, "u_Matrix");
+			var imageUniform = gl.getUniformLocation (glProgram, "u_Image0");
 			
-			gl.enableVertexAttribArray (glVertexAttribute);
-			gl.enableVertexAttribArray (glTextureAttribute);
+			gl.enableVertexAttribArray (a_Position);
+			gl.enableVertexAttribArray (a_TexCoord);
 			gl.uniform1i (imageUniform, 0);
 			
 			gl.blendFunc (gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -91,10 +98,20 @@ class WebGLRenderer {
 				
 			];
 			
-			glBuffer = gl.createBuffer ();
-			gl.bindBuffer (gl.ARRAY_BUFFER, glBuffer);
+			bufferVertices = gl.createBuffer();
+			gl.bindBuffer (gl.ARRAY_BUFFER, bufferVertices);
 			gl.bufferData (gl.ARRAY_BUFFER, new Float32Array (data), gl.STATIC_DRAW);
 			gl.bindBuffer (gl.ARRAY_BUFFER, null);
+
+			var indices = [
+				0, 1, 2,
+				2, 3, 1
+			];
+
+			bufferIndices = gl.createBuffer();
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferIndices);
+			gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Int16Array(indices), gl.STATIC_DRAW);
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 			
 			glTexture = gl.createTexture ();
 			gl.bindTexture (gl.TEXTURE_2D, glTexture);
@@ -127,11 +144,14 @@ class WebGLRenderer {
 			gl.enable (gl.TEXTURE_2D);
 			#end
 			
-			gl.bindBuffer (gl.ARRAY_BUFFER, glBuffer);
-			gl.vertexAttribPointer (glVertexAttribute, 3, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 0);
-			gl.vertexAttribPointer (glTextureAttribute, 2, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
+			gl.bindBuffer (gl.ARRAY_BUFFER, bufferVertices);
+			gl.vertexAttribPointer (a_Position, 3, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 0);
+			gl.vertexAttribPointer (a_TexCoord, 2, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
+
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferIndices);
 			
-			gl.drawArrays (gl.TRIANGLE_STRIP, 0, 4);
+			// gl.drawArrays (gl.TRIANGLE_STRIP, 0, 4);
+			gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
 			
 		}
 	}
