@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project>
+	
+	<meta title="Tobor 2" package="de.netzweh.tobor2" version="0.0.1" company="Netzweh" />
+	<window width="1280" height="696" orientation="landscape" resizable="true" fps="60" vsync="false" background="0xFFFFFF"/>
+	<app main="Main" path="Export" file="Tobor2" />
+	
+	<source path="Source" />
+	
+	<haxelib name="lime" />
+	
+	<assets path="Assets" rename="assets" embed="true" />
+	
+	<icon path="icon-1024.png" size="1024" embed="true" />
+	<icon path="icon-16.png" size="16" embed="true" />
+	
+</project>
