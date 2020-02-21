@@ -24,6 +24,7 @@ class WebGLRenderer {
 	
 	private var a_Position:Int;
 	private var a_TexCoord:Int;
+	private var a_Color:Int;
 	
 	var image:Image;
 
@@ -48,14 +49,18 @@ class WebGLRenderer {
 			"
 			attribute vec4 a_Position;
 			attribute vec2 a_TexCoord;
+			attribute vec4 a_Color;
 			
 			varying vec2 v_TexCoord;
+			varying vec4 v_Color;
 						
 			uniform mat4 u_Matrix;
 						
 			void main(void) {
 							
 				v_TexCoord = a_TexCoord;
+				v_Color = a_Color;
+
 				gl_Position = u_Matrix * a_Position;
 							
 			}";
@@ -67,11 +72,13 @@ class WebGLRenderer {
 			#end
 			"
 			varying vec2 v_TexCoord;
+			varying vec4 v_Color;
+
 			uniform sampler2D u_Image0;
 						
 			void main(void)
 			{
-				gl_FragColor = texture2D (u_Image0, v_TexCoord);
+				gl_FragColor = texture2D (u_Image0, v_TexCoord) * v_Color;
 			}";
 
 			glProgram = GLProgram.fromSources (gl, vertexSource, fragmentSource);
@@ -79,22 +86,28 @@ class WebGLRenderer {
 			
 			a_Position = gl.getAttribLocation (glProgram, "a_Position");
 			a_TexCoord = gl.getAttribLocation (glProgram, "a_TexCoord");
+			a_Color = gl.getAttribLocation (glProgram, "a_Color");
+
 			glMatrixUniform = gl.getUniformLocation (glProgram, "u_Matrix");
 			var imageUniform = gl.getUniformLocation (glProgram, "u_Image0");
 			
 			gl.enableVertexAttribArray (a_Position);
 			gl.enableVertexAttribArray (a_TexCoord);
+			gl.enableVertexAttribArray (a_Color);
+			
 			gl.uniform1i (imageUniform, 0);
 			
 			gl.blendFunc (gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 			gl.enable (gl.BLEND);
 			
+			// ARGB
+
 			var data = [
 				
-				image.width, image.height, 0, 1, 1,
-				0, image.height, 0, 0, 1,
-				image.width, 0, 0, 1, 0,
-				0, 0, 0, 0, 0
+				image.width, image.height, 0, 	1, 1,	1, 0, 0, 1,
+				0, image.height, 0, 			0, 1,	1, 0, 0, 1,
+				image.width, 0, 0, 				1, 0,	1, 0, 0, 1,
+				0, 0, 0, 						0, 0,	1, 1, 1, 1
 				
 			];
 			
@@ -145,8 +158,9 @@ class WebGLRenderer {
 			#end
 			
 			gl.bindBuffer (gl.ARRAY_BUFFER, bufferVertices);
-			gl.vertexAttribPointer (a_Position, 3, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 0);
-			gl.vertexAttribPointer (a_TexCoord, 2, gl.FLOAT, false, 5 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
+			gl.vertexAttribPointer (a_Position, 3, gl.FLOAT, false, 9 * Float32Array.BYTES_PER_ELEMENT, 0);
+			gl.vertexAttribPointer (a_TexCoord, 2, gl.FLOAT, false, 9 * Float32Array.BYTES_PER_ELEMENT, 3 * Float32Array.BYTES_PER_ELEMENT);
+			gl.vertexAttribPointer (a_Color, 	4, gl.FLOAT, false, 9 * Float32Array.BYTES_PER_ELEMENT, 5 * Float32Array.BYTES_PER_ELEMENT);
 
 			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferIndices);
 			
