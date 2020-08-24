@@ -1,0 +1,11 @@
+-lib heaps
+-lib hlsdl
+-hl out/hashlink/main.hl
+
+-D windowSize=1280x720
+# -D windowSize=640x360
+-D windowTitle=The Game of Tobor 2
+
+--class-path src
+
+-main Main

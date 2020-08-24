@@ -5,10 +5,14 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "HashLink",
-			"type": "lime",
-			"request": "launch",
-			"program": "${workspaceRoot} lime test hl"
+			"name": "HashLink (launch)",
+            "request": "launch",
+            "type": "hl",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": {
+                "type": "haxe",
+                "args": "active configuration"
+            }
 		}
 	]
 }
