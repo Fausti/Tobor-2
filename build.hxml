@@ -2,10 +2,10 @@
 -lib hlsdl
 -hl out/hashlink/main.hl
 
--D windowSize=1280x720
-# -D windowSize=640x360
+# -D highdpi
+-D windowSize=1280x696
 -D windowTitle=The Game of Tobor 2
 
 --class-path src
 
--main Main
+-main Tobor
