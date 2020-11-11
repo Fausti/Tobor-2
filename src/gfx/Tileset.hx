@@ -2,7 +2,7 @@ package gfx;
 
 import sys.io.File;
 import hxd.res.Image;
-import Assets.FileList;
+import Files.FileList;
 import hxd.Pixels;
 import h2d.Tile;
 
@@ -22,7 +22,7 @@ class Tileset {
     public function new() {
         sprites = [];
 
-        tilePixels = Pixels.alloc(TEXTURE_SIZE * Tobor.TILE_W, TEXTURE_SIZE * Tobor.TILE_W, hxd.PixelFormat.ARGB);
+        tilePixels = Pixels.alloc(TEXTURE_SIZE * Const.TILE_W, TEXTURE_SIZE * Const.TILE_W, hxd.PixelFormat.ARGB);
         tilePixels.clear(0x00000000);
         tileTexture = Tile.fromPixels(tilePixels);
     }
@@ -42,11 +42,11 @@ class Tileset {
 
 			var src = img.getPixels();
 
-			if (imgSize.width % Tobor.TILE_W == 0 && imgSize.height % Tobor.TILE_H == 0) {
+			if (imgSize.width % Const.TILE_W == 0 && imgSize.height % Const.TILE_H == 0) {
 				var countX:Int, countY:Int, count:Int;
 
-				countX = Math.floor(imgSize.width / Tobor.TILE_W);
-				countY = Math.floor(imgSize.height / Tobor.TILE_H);
+				countX = Math.floor(imgSize.width / Const.TILE_W);
+				countY = Math.floor(imgSize.height / Const.TILE_H);
 				count = countX * countY;
 
 				// trace(count, countX, countY);
@@ -60,7 +60,7 @@ class Tileset {
 
 					for (x in 0 ... 16) {
 						for (y in 0 ... 12) {
-							dst.setPixel(x, y, src.getPixel(srcX * Tobor.TILE_W + x, srcY * Tobor.TILE_H + y));
+							dst.setPixel(x, y, src.getPixel(srcX * Const.TILE_W + x, srcY * Const.TILE_H + y));
 						}
 					}
 
@@ -99,6 +99,11 @@ class Tileset {
 
     public function getTile(name:String, ?subIndex:Int = 0):Tile {
         var spr = getSprite(name, subIndex);
+
+        if (spr == null) {
+            return null;
+        }
+
         var tile = spr.getTile();
 
         return tile;
@@ -115,7 +120,7 @@ class Tileset {
 
         // trace("Creating Sprite:", index, dstX * Tobor.TILE_W, dstY * Tobor.TILE_H);
 
-        var sprite = new TileEntry(this, name, index, subIndex, dstX * Tobor.TILE_W, dstY * Tobor.TILE_H, Tobor.TILE_W, Tobor.TILE_H);
+        var sprite = new TileEntry(this, name, index, subIndex, dstX * Const.TILE_W, dstY * Const.TILE_H, Const.TILE_W, Const.TILE_H);
         sprites.push(sprite);
 
         return sprite;

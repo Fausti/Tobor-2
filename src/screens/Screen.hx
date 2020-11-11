@@ -1,39 +1,81 @@
 package screens;
 
-import gfx.Gfx;
+import ui.Dialog;
 import h2d.Bitmap;
 import h2d.Object;
 
 class Screen extends Object {
     var app:Tobor;
+    var background:Bitmap;
 
-    var bg:Bitmap;
+    var dialog:Dialog;
 
-    public function new(app:Tobor, ?parent:Object) {
-        super(parent);
+    public function new(app:Tobor) {
+        super(Tobor.root);
 
         this.app = app;
-
-        bg = new Bitmap(Gfx.tileset.getSprite("white").getTile().sub(0, 0, 1, 1), this);
-        bg.scaleX = Tobor.SCREEN_W;
-        bg.scaleY = Tobor.SCREEN_H;
+        
+        background = new Bitmap(Gfx.getWhitePixel(), this);
+        background.width = Const.SCREEN_W;
+        background.height = Const.SCREEN_H;
 
         init();
     }
 
-    function init() {
+    public function init() {
 
+    }
+
+    public function show() {
+
+    }
+
+    public function hide() {
+
+    }
+
+    public function _update(deltaTime:Float) {
+        if (dialog != null) {
+            dialog.update(deltaTime);
+            return;
+        }
+
+        update(deltaTime);
     }
 
     public function update(deltaTime:Float) {
-
+        
     }
 
-    public function onMouseMove(mouseX:Int, mouseY:Int) {
-        
+    public function _onKeyDown(keyCode:Int, charCode:Int):Bool {
+        if (dialog != null) {
+            return dialog.onKeyDown(keyCode, charCode);
+        }
+
+        return onKeyDown(keyCode, charCode);
     }
 
     public function onKeyDown(keyCode:Int, charCode:Int):Bool {
         return false;
+    }
+
+    public function _onWheel() {
+        onWheel();
+    }
+
+    public function onWheel() {
+
+    }
+
+    public function showDialog(d:Dialog) {
+        if (this.dialog != null) {
+            if (this.dialog != d) {
+                this.dialog.hide();
+                this.dialog.remove();
+            }
+        }
+
+        this.dialog = d;
+        if (d != null) d.show();
     }
 }

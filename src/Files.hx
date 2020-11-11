@@ -1,29 +1,34 @@
-import haxe.io.Path;
-import fs.ZipFileSystem;
-import hxd.fs.FileEntry;
-import hxd.fs.LocalFileSystem;
-import hxd.fs.FileSystem;
+import hxd.res.Embed;
+import hxd.fs.EmbedFileSystem;
 import hxd.Res;
+import hxd.fs.FileSystem;
+import fs.ZipFileSystem;
+import hxd.fs.LocalFileSystem;
+import haxe.io.Path;
+import hxd.fs.FileEntry;
 
 typedef FileList = Map<String, FileEntry>;
 
-class Assets {
+class Files {
     public var directoryUser:String;
     public var directoryHome:String;
     public var directoryGames:String;
     public var directorySaves:String;
     public var directoryMods:String;
 
+    // global
     var fsEmbed:hxd.fs.FileSystem;
     var fsMods:hxd.fs.FileSystem;
     var fsGame:hxd.fs.FileSystem;
 
-    public function new(?gameName:String = null) {
-        // Spielverzeichnis im Benutzerverzeichnis
+    // alle Episoden
+    var fsGameList:hxd.fs.FileSystem;
+
+    public function new() {
         var home = Sys.getEnv(if (Sys.systemName() == "Windows") "UserProfile" else "HOME");
         directoryUser = home;
 
-        directoryHome = Path.join([home, Config.appName]);
+        directoryHome = Path.join([home, Const.APP_NAME]);
 
         directoryGames = Path.join([directoryHome, "games"]);
         directorySaves = Path.join([directoryHome, "saves"]);
@@ -36,11 +41,6 @@ class Assets {
 
         // Mods im Benutzerverzeichnis
         fsMods = new LocalFileSystem(directoryMods, null);
-
-        // Episodendateien
-        if (gameName != null) {
-            openGame(Path.join([directoryGames, gameName]));
-        }
     }
 
     function initDirs() {
@@ -86,12 +86,22 @@ class Assets {
         fsGame = null;
     }
 
-    public function getFileList(path:String, ext:String, ?includeDirs:Bool = false):FileList {
+    public static function getAssetList(path:String, ext:String, ?includeDirs:Bool = false):FileList {
         var list = new FileList();
 
-        searchFiles(list, fsEmbed, path, ext, includeDirs);
-        searchFiles(list, fsGame, path, ext, includeDirs);
-        searchFiles(list, fsMods, path, ext, includeDirs);
+        Files.instance.searchFiles(list, Files.instance.fsEmbed, path, ext, includeDirs);
+        Files.instance.searchFiles(list, Files.instance.fsGame, path, ext, includeDirs);
+        Files.instance.searchFiles(list, Files.instance.fsMods, path, ext, includeDirs);
+
+        return list;
+    }
+
+    public static function getGameList():FileList {
+        var list = new FileList();
+
+        Files.instance.fsGameList = new LocalFileSystem(instance.directoryGames, null);
+
+        Files.instance.searchFiles(list, Files.instance.fsGameList, "", "zip", true);
 
         return list;
     }
@@ -99,18 +109,36 @@ class Assets {
     function searchFiles(list:FileList, fs:FileSystem, path:String, ext:String, ?includeDirs:Bool = false):FileList {
         if (fs == null) return list;
 
-        var fe:FileEntry;
+        var fe:FileEntry = null;
 
-        try {
-            fe = fs.get(path);
-        } catch (e) {
-            trace(fs, e);
-            return list;
+        if (Std.isOfType(fs, EmbedFileSystem)) {
+            try {
+                fe = fs.get(path);
+            } catch (e) {
+                trace(fs, e);
+                return list;
+            }
+        } else {
+            if (path == null) {
+                try {
+                    fe = fs.getRoot();
+                } catch (e) {
+                    trace(fs, e);
+                    return list;
+                }
+            } else {
+                try {
+                    fe = fs.get(path);
+                } catch (e) {
+                    trace(fs, e);
+                    return list;
+                }
+            }
         }
 
         for (f in fe) {
             if (!f.isDirectory) {
-                if (ext == null) {
+                if (ext == null || ext == "") {
                     list.set(f.name, f);
                 } else {
                     if (f.extension.toLowerCase() == ext.toLowerCase()) {
@@ -125,5 +153,11 @@ class Assets {
         }
 
         return list;
+    }
+
+    public static var instance:Files;
+
+    public static function init() {
+        Files.instance = new Files();
     }
 }

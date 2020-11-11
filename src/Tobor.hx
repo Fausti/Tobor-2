@@ -1,134 +1,131 @@
+import world.World;
+import haxe.SysTools;
+import screens.EpisodesScreen;
+import hl.UI;
 import hxd.System;
 import hxd.Key;
-import screens.StartScreen;
-import h2d.Object;
-import gfx.Tileset;
-import gfx.Gfx;
-import hxd.Event;
-import hxd.Window;
-import h2d.Scene;
+import h3d.pass.Default;
 import screens.Screen;
+import h2d.Scene;
+import hxd.Window;
+import hxd.Window.DisplayMode;
+import hxd.Event;
 import hxd.Res;
 import hxd.App;
 
 class Tobor extends App {
-    public static var root:Scene;
-    public var window:Window;
-
-    var baseAssets:Assets;
-    
-    public static var screen(default, null):Screen;
-
     var active:Bool = true;
 
+    var screen:Screen;
+
+    public static var defaultLocale:String = "de";
+    public static var locale:String;
+
+    public static var world:World;
+
     override function init() {
-        Config.init();
+        Tobor.locale = System.lang;
+        trace("Userlocale: " + Tobor.locale);
+
+        Tobor.window = Window.getInstance();
+        
+        Tobor.root = this.s2d;
+        Tobor.root.scaleMode = ScaleMode.Stretch(Const.SCREEN_W, Const.SCREEN_H);
+
+        // Config.init();
+        // Text.init();
+
+        Files.init();
+        // Sound.init();
+
+        Gfx.baseTileset = new Tileset();
+        Gfx.baseTileset.loadSprites(Files.getAssetList("gfx", "png"));
 
         Gfx.fontNormal = Res.fnt.cga.toFont();
         Gfx.fontThin = Res.fnt.cga_thin.toFont();
-
-        baseAssets = new Assets();
-
-        // Basistileset aus eingebetteten Grafiken und Modgrafiken erstellen
-
-        var list = baseAssets.getFileList("gfx", "png");
-        Gfx.baseTileset = new Tileset();
-        Gfx.baseTileset.loadSprites(list);
-        Gfx.tileset = Gfx.baseTileset;
-
+        
+        // Debugausgabe des Spriteatlases
         Gfx.tileset.savePNG("tileset.png");
 
-        Tobor.root = s2d;
-        // Tobor.root.scaleMode = ScaleMode.LetterBox(Tobor.SCREEN_W, Tobor.SCREEN_H, true);
-        Tobor.root.scaleMode = ScaleMode.Stretch(Tobor.SCREEN_W, Tobor.SCREEN_H);
-        // Tobor.root.scaleMode = ScaleMode.Fixed(Tobor.SCREEN_W, Tobor.SCREEN_H, 1);
-        
-        this.window = hxd.Window.getInstance();
-        this.window.addEventTarget(onEvent);
+        Input.init(Tobor.window);
+        Tobor.window.addEventTarget(onEvent);
 
-        Tobor.screen = new StartScreen(this, root);
+        setTitle("The World of Tobor");
+        setScreen(new EpisodesScreen(this));
     }
 
-    override function update(dt:Float) {
+    override function update(deltaTime:Float) {
+        // Wenn Fenster keinen Focus hat nichts berechnen
         if (!active) return;
-        if (Tobor.screen == null) return;
 
-        Tobor.screen.update(dt);
-    }
+        // Wenn kein aktiver Screen, raus hier...
+        if (screen == null) return;
 
-    public static function setScreen(newScreen:Screen) {
-        if (Tobor.screen != null) {
-            Tobor.screen.remove();
-        }
-        
-        Tobor.screen = newScreen;
-    }
-
-    override public function onResize() {
-        var stage = hxd.Window.getInstance();
-        trace('Resized to ${stage.width}px * ${stage.height}px');
+        // aktiven Bildschirm aktualisieren
+        screen._update(deltaTime);
     }
 
     function onEvent(event:Event) {
-        switch(event.kind) {
-            case EMove:
-                if (Tobor.screen != null) {
-                    Tobor.screen.onMouseMove(Math.floor(event.relX), Math.floor(event.relY));
-                }
-            case EKeyUp:
-                // ALT, STRG, SHIFT abfangen
-                switch (event.keyCode) {
-                    case Key.ALT:
-                        Input.setMod(Key.ALT, false);
-                    case Key.SHIFT:
-                        Input.setMod(Key.SHIFT, false);
-                    case Key.CTRL:
-                        Input.setMod(Key.CTRL, false);
-                }
+        switch (event.kind) {
             case EKeyDown:
-                // ALT, STRG, SHIFT abfangen
-                switch (event.keyCode) {
-                    case Key.ALT:
-                        Input.setMod(Key.ALT, true);
-                    case Key.SHIFT:
-                        Input.setMod(Key.SHIFT, true);
-                    case Key.CTRL:
-                        Input.setMod(Key.CTRL, true);
-                }
-
-                if (event.keyCode == Key.ENTER) { // Fullscreen ALT+ENTER
+                if (event.keyCode == Key.ENTER) {
+                    // Fullscreen: ALT+ENTER
                     if (Input.checkMod(Key.ALT)) {
                         engine.fullScreen = !engine.fullScreen;
                         return;
                     }
-                } else if (event.keyCode == Key.F4) { // Beenden ALT+F4
+                } else if (event.keyCode == Key.F4) {
+                    // Beenden: ALT+F4
                     if (Input.checkMod(Key.ALT)) {
                         System.exit();
+                        return;
                     }
+                } else if (event.keyCode == Key.F12) { 
+                    // Screenshot: F12
                 }
 
-                if (Tobor.screen != null) {
-                    Tobor.screen.onKeyDown(event.keyCode, event.charCode);
+                if (screen != null) {
+                    screen._onKeyDown(event.keyCode, event.charCode);
+                }
+            case EWheel:
+                if (screen != null) {
+                    screen._onWheel();
                 }
             case EFocus:
                 active = true;
             case EFocusLost:
                 active = false;
             default:
-                trace(event);
         }
-        
     }
 
+    public function setScreen(newScreen:Screen) {
+        if (this.screen != null) {
+            this.screen.hide();
+            this.screen.remove();
+        }
+
+        // Input.clearKeys();
+
+        this.screen = newScreen;
+        this.screen.show();
+    }
+
+    public function setTitle(?title:String = null) {
+        if (title == null) {
+            Tobor.window.title = "The World of Tobor";
+        } else {
+            Tobor.window.title = "The World of Tobor: " + title;
+        }
+    }
+
+    // statische Variablen
+    public static var window:Window;
+    public static var root:Scene;
+    
     // Programmeinstiegspunkt
-    static function main() {
+    public static function main() {
         Res.initEmbed();
         new Tobor();
     }
-
-    public static inline var SCREEN_W:Int = 640;
-    public static inline var SCREEN_H:Int = 348;
-
-    public static inline var TILE_W:Int = 16;
-    public static inline var TILE_H:Int = 12;
 }

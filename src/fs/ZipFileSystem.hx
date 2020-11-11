@@ -27,6 +27,10 @@ class ZipFileEntry extends FileEntry {
     }
 
     override function getBytes():Bytes {
+        if (entry.compressed) {
+            return Reader.unzip(entry);
+        }
+
         return entry.data;
     }
 
@@ -76,6 +80,14 @@ class ZipFileEntry extends FileEntry {
         var np = entry.fileName.split('.');
         return np.length == 1 ? "" : np.pop().toLowerCase();
     }
+
+    override function getText():String {
+        if (entry.compressed) {
+            return Reader.unzip(entry).toString();
+        }
+
+        return entry.data.toString();
+    }
 }
 
 @:allow(ZipFileEntry)
@@ -100,7 +112,9 @@ class ZipFileSystem implements FileSystem {
             }
 
             e.fileName = fileName;
-            list.push(new ZipFileEntry(this, e));
+
+            var ze = new ZipFileEntry(this, e);
+            list.push(ze);
             // trace(e);
         }
 
@@ -127,6 +141,12 @@ class ZipFileSystem implements FileSystem {
     }
 
 	public function exists( path : String ) : Bool {
+        for (e in list) {
+            if (StringTools.endsWith(e.path, path)) {
+                return true;
+            }
+        }
+
         return false;
     }
 
